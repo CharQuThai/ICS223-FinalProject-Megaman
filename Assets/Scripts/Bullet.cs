@@ -6,21 +6,19 @@ public class Bullet : MonoBehaviour
 {
     public Transform firePoint;
     public GameObject bulletPrefab;
+    private AudioSource bulletSound;
 
-    
-    // Start is called before the first frame update
     void Start()
     {
-        
+        bulletSound = GetComponent<AudioSource>();
     }
-
-    // Update is called once per frame
     void Update()
     {
         bool keyShoot = Input.GetKeyDown(KeyCode.P);
         if (keyShoot) 
         {
             Shoot();
+            bulletSound.PlayOneShot(bulletSound.clip);
         }
     }
 

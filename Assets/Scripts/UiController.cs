@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class UiController : MonoBehaviour
 {
     public GameObject settingsCanvas;
+    public GameObject healthCanvas;
 
     void Update()
     {
@@ -26,6 +28,12 @@ public class UiController : MonoBehaviour
         Time.timeScale = 1f;
 
         settingsCanvas.SetActive(false);
+    }
+
+    public void RestartGame()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        Time.timeScale = 1f;
     }
 
     public void EndGame()
