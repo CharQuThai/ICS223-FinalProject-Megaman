@@ -14,6 +14,7 @@ public class Pickup : MonoBehaviour
             if (playerHealth != null)
             {
                 playerHealth.health += 5;
+                playerHealth.healthText.text = playerHealth.health.ToString() ;
                 Destroy(gameObject);
             }
         }

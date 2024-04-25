@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class RemoveCanvas : MonoBehaviour
 {
-    public float delay = 2f; 
+    public float delay = 3f; 
     private Canvas canvas;
 
     void Start()
