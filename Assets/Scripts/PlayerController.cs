@@ -4,98 +4,112 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] private Rigidbody2D rbody;
-    [SerializeField] Animator anim;
+    [SerializeField] Rigidbody2D rb;
+    [SerializeField] Animator animator;
+    [SerializeField] BoxCollider2D boxCollider;
 
-    private float horizInput;           // store horizontal input for used in FixedUpdate()
-    private float moveSpeed = 450.0f;   // 4.5 * 100 newtons
+    [SerializeField] float moveSpeed = 6.0f;
+    [SerializeField] float jumpSpeed = 8.0f;
 
-    private float jumpHeight = 3.0f;    // height of jump in units
-    private float jumpTime = 0.75f;     // time of jump in seconds
-    private float initialJumpVelocity;  // calculated jump velocity
+    bool isGrounded;
+    bool isFacingRight = true;
 
-    private bool isGrounded = false;    // true if player is grounded
-    [SerializeField] private Transform groundCheckPoint;    // draw a circle around this to check ground
-    [SerializeField] private LayerMask groundLayerMask;     // a layer for all things ground
-    private float groundCheckRadius = 0.3f;                 // radius of ground check circle
-
-    private int jumpMax = 2;            // # of jumps player can do without touching ground
-    private int jumpsAvailable = 0;     // current jumps available to player
-
-    private bool facingRight = true;    // true if facing right
-
-    private void Start()
+    private void FixedUpdate()
     {
-        // calculate gravity using gravity formula
-        float timeToApex = jumpTime / 2.0f;
-        float gravity = (-2 * jumpHeight) / Mathf.Pow(timeToApex, 2);
-        Debug.Log("gravity:" + gravity);
-
-        // adjust gravity scale of player based on gravity required for jumpHeight & jumpTime
-        rbody.gravityScale = gravity / Physics2D.gravity.y;
-
-        // calculate jump velocity req'd for jumpHeight & jumpTime
-        initialJumpVelocity = Mathf.Sqrt(jumpHeight * -2 * gravity);
+        CheckGrounded();
     }
 
-    void Update()
+    private void Update()
     {
-        // read & store horizontal input
-        horizInput = Input.GetAxis("Horizontal");
+        HandleInput();
+        UpdateAnimations();
+    }
 
-        // determine if player is running (for animator param)
-        bool isRunning = horizInput > 0.01 || horizInput < -0.01;        
-        anim.SetBool("isRunning", isRunning);   // notify animator
+    void CheckGrounded()
+    {
+        isGrounded = false;
+        RaycastHit2D raycastHit;
+        float raycastDistance = 0.05f;
+        int layerMask = 1 << LayerMask.NameToLayer("Ground");
 
-        // determine if player is grounded
-        isGrounded = Physics2D.OverlapCircle(groundCheckPoint.position, groundCheckRadius, groundLayerMask) && rbody.velocity.y < 0.01;
-        anim.SetBool("isGrounded", isGrounded); // notify animator
+        Vector3 box_origin = boxCollider.bounds.center;
+        Vector3 box_size = boxCollider.bounds.size;
+        box_origin.y = boxCollider.bounds.min.y + (boxCollider.bounds.extents.y / 4.0f);
+        box_size.y = boxCollider.bounds.size.y / 4.0f;
+        raycastHit = Physics2D.BoxCast(box_origin, box_size, 0.0f, Vector2.down, raycastDistance, layerMask);
 
-        // reset jumps if grounded
-        if (isGrounded)
+        if (raycastHit.collider != null)
         {
-            jumpsAvailable = jumpMax;
+            isGrounded = true;
+        }
+    }
+
+    void HandleInput()
+    {
+        float keyHor = Input.GetAxisRaw("Horizontal");
+        bool keyJump = Input.GetKeyDown(KeyCode.Space);
+        bool keyShoot = Input.GetKeyDown(KeyCode.P);
+
+        // Move left or right
+        float moveDirection = keyHor;
+        rb.velocity = new Vector2(moveDirection * moveSpeed, rb.velocity.y);
+
+        // Flip sprite if needed
+        if (moveDirection != 0)
+        {
+            if (moveDirection > 0 && !isFacingRight || moveDirection < 0 && isFacingRight)
+            {
+                Flip();
+            }
         }
 
-        // if jump is triggered & available - go for it
-        if (Input.GetButtonDown("Jump") && jumpsAvailable > 0)
+        // Jump
+        if (keyJump && isGrounded)
         {
             Jump();
         }
 
-        // Flip player if appropriate
-        if( (facingRight && horizInput < -0.01) ||
-            (!facingRight && horizInput > 0.01) )
+        // Shoot
+        if (keyShoot)
         {
-            Flip();
+            Shoot();
         }
     }
 
-    private void OnDrawGizmos()
+    void UpdateAnimations()
     {
-        // draw the ground check sphere in the Scene
-        Gizmos.DrawSphere(groundCheckPoint.position, groundCheckRadius);
-    }
+        if (isGrounded)
+        {
+            if (rb.velocity.x != 0)
+            {
+                animator.SetBool("IsRunning", true);
+            }
+            else
+            {
+                animator.SetBool("IsRunning", false);
+            }
+        }
+        else
+        {
+            animator.SetBool("IsRunning", false);
+        }
 
-    private void FixedUpdate()
-    {
-        // move the player (use horizontal input, but maintain existing y velocity)
-        float xVel = horizInput * moveSpeed * Time.deltaTime;
-        rbody.velocity = new Vector2(xVel, rbody.velocity.y);
+        animator.SetBool("IsGrounded", isGrounded);
     }
 
     void Jump()
     {
-        // tell the player to jump
-        rbody.velocity = new Vector2(rbody.velocity.x, initialJumpVelocity);
-        jumpsAvailable--;
-        anim.SetTrigger("jump");    // notify animator
+        rb.velocity = new Vector2(rb.velocity.x, jumpSpeed);
+    }
+
+    void Shoot()
+    {
+        animator.SetTrigger("Shoot");
     }
 
     void Flip()
     {
-        // flip the direction the player is facing
-        facingRight = !facingRight;
-        transform.Rotate(Vector3.up, 180);
+        isFacingRight = !isFacingRight;
+        transform.Rotate(0.0f, 180.0f, 0.0f);
     }
 }
